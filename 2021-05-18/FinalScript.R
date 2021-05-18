@@ -34,7 +34,15 @@ survey <- survey %>%
                      "global" = "canada" ,
                      "$2,175.84/year is deducted for benefits" = "canada",
                      "catalonia" = "spain",
-                     "czech republic" = "czechia"
+                     "czech republic" = "czechia",
+                     "europe" = "czechia",
+                     "italy (south)" = "italy",
+                     "luxemburg" = "luxembourg",
+                     "nederland" = "netherlands",
+                     "nl" = "netherlands" ,
+                     "the netherlands" = "netherlands",
+                     "austria, but i work remotely for a dutch/british company" = "austria"
+                     
                      
     ) 
   )
@@ -61,6 +69,21 @@ survey <-  survey %>%
       currency == "AUD/NZD" & country == "new zealand" ~ "NZD",
       currency == "EUR" & country == "sweden" ~ "SEK",
       currency == "EUR" & country == "denmark" ~ "DKK",
+      currency == "EUR" & country == "norway" ~ "NOK",
+      currency == "EUR" & country == "south africa" ~ "ZAR",
+      currency == "EUR" & country == "u.k." ~ "GBP",
+      currency == "EUR" & country == "usa" ~ "USD",
+      
+      
+      
+      
+      
       TRUE ~ currency
       
     )) 
+
+
+
+
+
+## IGNORE BULGARIA , CROATIA , SERBIA , HUNGARY
