@@ -1,14 +1,4 @@
-library(tidyverse)
-library(tidytuesdayR)
 
-tuesdata <- tidytuesdayR::tt_load('2021-05-18')
-survey <- tuesdata$survey
-#rm(tuesdata)
-
-survey <- survey %>% 
-  mutate(rowid = row_number(), country = str_to_lower(country)) %>% 
-  relocate(rowid , .before = 1) 
-  
 ## Step 1
 survey %>% 
   filter(currency == "AUD/NZD") %>% 
@@ -36,10 +26,41 @@ survey %>%
   select(country,currency)
   
   
-survey %>%
-  distinct(currency,country) %>% 
-  arrange(currency) %>% 
-  View()
+
+
+
+survey %>% 
+  filter(currency == "GBP") %>% 
+  distinct(currency,country) %>%  View()
+
+%>% 
+  mutate(country1 =  str_detect(country,"^.*u[?.]*k.*$") |
+                      str_detect(country,"^.*unite[?.]*kingdom.*$")
+         ) %>% 
+  write_csv("./Data/currcoun1.csv")
+
+
+
+
+survey %>% 
+    distinct(currency,country) %>% 
+  mutate(country1 = if_else(
+                    ((
+                    str_detect(country,"^.*unite.*kin.*$") |
+                    str_detect(country,"^.*u[?.]*k.*$") |
+                    str_detect(country,"^englan.*$") |
+                    str_detect(country,"^scotlan.*$") |
+                    str_detect(country,"^.*wales*$") |
+                    str_detect(country,"britain") |
+                    str_detect(country,"northern ireland") |
+                    str_detect(country,"jersey") |
+                    str_detect(country,"isle of man")
+                    ) & currency == "GBP" )
+                    , "united kingdom"
+                    ,country
+                    )
+          )  %>% 
+  write_csv("./Data/currcoun1.csv")
   
   
 
@@ -121,7 +142,7 @@ filter(country != "canada") %>%
 
 
 survey %>% 
-  filter(currency == "EUR") %>% 
+  filter(currency == "GBP") %>% 
   #filter (country %in% c("sweden"))  %>% 
   distinct(currency,country) %>% 
   arrange(country) %>% 
@@ -130,6 +151,34 @@ survey %>%
 
 
 survey %>% 
-  filter(currency == "EUR") %>% 
-  filter(country == "uk") %>% 
+  filter(currency == "GBP") %>% 
+  filter(country == "usa") %>% 
   View()
+
+
+
+survey %>% 
+  filter(currency == "HKD") %>% 
+  distinct(currency,country) %>% 
+  arrange(country) %>% 
+  View()
+
+
+survey %>% 
+  filter(currency == "HKD") %>%  View()
+
+
+survey %>% 
+  filter(currency == "JPY", country == "united states") %>%  View()
+
+
+
+survey %>% 
+  filter(currency == "SEK", country == "us") %>%  View()
+
+
+
+
+
+
+
