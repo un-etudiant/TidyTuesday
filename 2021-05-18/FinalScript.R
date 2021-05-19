@@ -30,7 +30,6 @@ survey <-
   survey %>% mutate(country = if_else(country == "\U1F1FA\U1F1F8"
               , "united states", country))
 
-
 ## create a mapping to correct countries
 survey_countries <- survey %>%
   distinct(country) %>%
@@ -45,8 +44,6 @@ survey_countries <- survey_countries %>%
       destination = "country.name"
     )
   )
-
-
 
 surve_countries_p1 <- survey_countries %>%
   filter(pass == "P1", is.na(corrected_countryname)) %>%
@@ -116,3 +113,14 @@ survey_countries <- survey_countries %>%
 survey <- survey %>%
   left_join(survey_countries, by = "country") %>%
   filter(!is.na(corrected_countryname))
+
+
+## Let us now check valid currencies
+
+survey <- survey %>% 
+  mutate(currency = case_when(
+    currency == "AUD/NZD" & corrected_countryname == "Australia" ~ "AUD",
+    currency == "AUD/NZD" & corrected_countryname == "New Zealand" ~ "NZDD",
+    TRUE ~ currency
+  ))
+
