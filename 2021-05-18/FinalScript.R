@@ -1,146 +1,118 @@
 library(tidyverse)
 library(tidytuesdayR)
 
-tuesdata <- tidytuesdayR::tt_load('2021-05-18')
+tuesdata <- tidytuesdayR::tt_load("2021-05-18")
 survey <- tuesdata$survey
-#rm(tuesdata)
+rm(tuesdata)
 
 ## The data is terribly unclean and hence needs to be cleansed.
 ## We will start using currenncy codes and use that to clean a bit.
 
 ## Add Row Ids to ensure that we have some way of identifying the unique row
 ## Convert all country names to lower case for easier comparison
-survey <- survey %>% 
-  mutate(rowid = row_number(), country = str_to_lower(country)) %>% 
-  relocate(rowid , .before = 1) 
+survey <- survey %>%
+  arrange(country) %>%
+  mutate(rowid = row_number(), country = str_to_lower(country)) %>%
+  relocate(rowid, .before = 1)
 
-survey <- survey %>% filter(!country %in% c("bulgaria" , "croatia" , "serbia" , "hungary" , "afghanistan" , "romania","congo"))
+survey <-
+  survey %>% filter(!country %in% c(
+      "bulgaria",
+      "croatia",
+      "serbia",
+      "hungary",
+      "afghanistan",
+      "romania",
+      "congo"
+    )
+  )
+survey <-
+  survey %>% mutate(country = if_else(country == "\U1F1FA\U1F1F8"
+              , "united states", country))
 
-survey <- survey %>% filter(rowid != 3934)
-## Lets Tackle AUD/NZ Currency code
-## Later CAD
-survey <- survey %>% 
+
+## create a mapping to correct countries
+survey_countries <- survey %>%
+  distinct(country) %>%
+  mutate(pass = case_when(str_length(country) <= 32 ~ "P1",
+                          str_length(country) > 32 ~ "P2"))
+
+survey_countries <- survey_countries %>%
   mutate(
-    country = recode(country,
-                     "new zealand aotearoa" = "new zealand",
-                     "nz" = "new zealand",
-                     "australi" = "australia",
-                     "from new zealand but on projects across apac" = "new zealand" ,
-                     ###--CAD-- ##
-                     "canada, ottawa, ontario" = "canada",
-                     "canadw" = "canada",
-                     "can" = "canada",
-                     "canda" = "canada",
-                     "csnada" = "canada" ,
-                     "canad" = "canada" ,
-                     "canada and usa" = "canada",
-                     "global" = "canada" ,
-                     "$2,175.84/year is deducted for benefits" = "canada",
-                     "catalonia" = "spain",
-                     "czech republic" = "czechia",
-                     "europe" = "czechia",
-                     "italy (south)" = "italy",
-                     "luxemburg" = "luxembourg",
-                     "nederland" = "netherlands",
-                     "nl" = "netherlands" ,
-                     "the netherlands" = "netherlands",
-                     "austria, but i work remotely for a dutch/british company" = "austria"
-                     ) 
+    corrected_countryname = countrycode::countrycode(
+      survey_countries$country,
+      origin = "country.name",
+      destination = "country.name"
+    )
   )
 
 
 
-survey <- survey %>%  mutate(country = if_else(
-  ((
-    str_detect(country,"^.*unite.*kin.*$") |
-      str_detect(country,"^.*u[?.]*k.*$") |
-      str_detect(country,"^englan.*$") |
-      str_detect(country,"^scotlan.*$") |
-      str_detect(country,"^.*wales*$") |
-      str_detect(country,"britain") |
-      str_detect(country,"northern ireland") |
-      str_detect(country,"jersey") |
-      str_detect(country,"isle of man")
-  ) & currency == "GBP" )
-  , "united kingdom"
-  ,country
-)
-) 
+surve_countries_p1 <- survey_countries %>%
+  filter(pass == "P1", is.na(corrected_countryname)) %>%
+  mutate(
+    corrected_countryname = case_when(
+      (
+        str_detect(country, "^.*unite.*kin.*$") |
+          str_detect(country, "^.*u[?.]*k.*$") |
+          str_detect(country, "^englan.*$") |
+          str_detect(country, "^scotlan.*$") |
+          str_detect(country, "^.*wales*$") |
+          str_detect(country, "britain") |
+          str_detect(country, "northern ireland") |
+          str_detect(country, "jersey")
+      ) ~ "United Kingdom",
+      str_detect(country, "australi") ~ "Australia",
+      str_detect(country, "méxico") ~ "Mexico",
+      #str_detect(country,"^.*unit.*stat.*$") ~ "United States",
+      str_detect(country, "^.*uni.*sta.*$") ~ "United States",
+      str_detect(country, "usa") ~ "United States",
+      country %in% c(
+        "virginia",
+        "unted states",
+        "untied states",
+        "united sttes",
+        "united y",
+        "uxz",
+        "uss",
+        "usd",
+        "the us",
+        "united sates",
+        "united sates of america",
+        "ua",
+        "u. s",
+        "u. s.",
+        "u.a.",
+        "california",
+        "san francisco",
+        "hartford",
+        "america"
+      ) ~ "United States",
+      country %in% c("catalonia") ~ "Spain",
+      country %in% c("can", "canad", "canadw", "canda", "csnada") ~ "Canada",
+      country %in% c("danmark") ~ "Denmark",
+      country %in% c("brasil") ~ "Brazil",
+      country %in% c("nederland", "nl") ~ "Netherlands",
+      country %in% c("nz") ~ "New Zealand",
+      country %in% c("panamá") ~ "Panama",
+      TRUE ~ corrected_countryname
+    )) %>%
+  filter(!is.na(corrected_countryname))
 
-## specific case where currency is incorrect 
-## start with AUD/NZD
-## USD
-survey <- survey %>% 
-  mutate( currency = case_when(
-    rowid %in% c(17427,3492) ~ "CAD",
-    rowid %in% c(25511,5842,8917,24868,3595) ~ "USD",
-    rowid %in% c(17270) ~ "Other",
-    rowid %in% c(21294) ~ "INR",
-    rowid %in% c(5230,6175) ~ "GBP" ,
-    rowid %in% c(7279) ~ "ZAR",
-    rowid %in% c(16026,12034,17069) ~ "EUR",
-    rowid %in% c(14073) ~ "NOK",
-    rowid %in% c(11694) ~ "DKK",
-    
-    TRUE ~ currency
-  )
-  )
 
-survey <- survey %>% 
-  mutate( country = case_when(
-    rowid %in% c(11070) ~ "united kingdom",
-    rowid %in% c(12917) ~ "hong kong",
-    
-    
-    TRUE ~ country
-  )
-  )
-
-survey <- survey %>% 
-  mutate(currency = if_else(rowid == 15796,"USD",currency),
-         annual_salary = if_else(rowid == 15796,33047,annual_salary)
-         )
+survey_countries <- survey_countries %>%
+  left_join(surve_countries_p1, by = "country") %>%
+  mutate(
+    corrected_countryname.x = if_else(
+      pass.x == "P1" &
+        is.na(corrected_countryname.x),
+      corrected_countryname.y,
+      corrected_countryname.x
+    )
+  ) %>%
+  select(country, pass = pass.x, corrected_countryname = corrected_countryname.x)
 
 
-  ## separating the AUD and NZD appropriately
-survey <-  survey %>% 
-    mutate(currency = case_when(
-      currency == "AUD/NZD" & country == "australia" ~ "AUD",
-      currency == "AUD/NZD" & country == "new zealand" ~ "NZD",
-      currency == "EUR" & country == "sweden" ~ "SEK",
-      currency == "EUR" & country == "denmark" ~ "DKK",
-      currency == "EUR" & country == "norway" ~ "NOK",
-      currency == "EUR" & country == "south africa" ~ "ZAR",
-      currency == "EUR" & country == "u.k." ~ "GBP",
-      currency %in% c("EUR","GBP") & country == "usa" ~ "USD",
-      TRUE ~ currency
-      
-    )) 
-
-survey <- survey %>% 
-  mutate(currency = case_when(
-    country == "argentina" ~ "ARS",
-    (country == "australia" & currency == "Other") ~ "AUD",
-    TRUE ~ currency
-  ))
-
-## correct countries again after correcting currencies
-
-survey <- survey %>%  mutate(country = if_else(
-  ((
-    str_detect(country,"^.*unite.*kin.*$") |
-      str_detect(country,"^.*u[?.]*k.*$") |
-      str_detect(country,"^englan.*$") |
-      str_detect(country,"^scotlan.*$") |
-      str_detect(country,"^.*wales*$") |
-      str_detect(country,"britain") |
-      str_detect(country,"northern ireland") |
-      str_detect(country,"jersey") |
-      str_detect(country,"isle of man")
-  ) & currency == "GBP" )
-  , "united kingdom"
-  ,country
-)
-)
-
-## IGNORE BULGARIA , CROATIA , SERBIA , HUNGARY , AFGHANISTAN , ROMANIA ,
+survey <- survey %>%
+  left_join(survey_countries, by = "country") %>%
+  filter(!is.na(corrected_countryname))
